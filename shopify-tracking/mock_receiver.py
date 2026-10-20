@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Local stand-in for Meta CAPI / GA4 endpoints. Records every POST it receives
 so a workflow run can be proven instead of asserted."""
-import json, time
+import json, os, time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-LOG = "./shopify-tracking/receipts.jsonl"
+HERE = os.path.dirname(os.path.abspath(__file__))
+LOG = os.environ.get("MOCK_LOG", os.path.join(HERE, "receipts.jsonl"))
+PORT = int(os.environ.get("MOCK_PORT", "8799"))
 
 
 class H(BaseHTTPRequestHandler):
@@ -26,4 +28,4 @@ class H(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    HTTPServer(("127.0.0.1", 8799), H).serve_forever()
+    HTTPServer(("127.0.0.1", PORT), H).serve_forever()

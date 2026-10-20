@@ -36,7 +36,7 @@ Built for Shopify tracking, email deliverability and Klaviyo flow health.</p>
 
 <div class="verdict">
   <div><b style="color:var(--ok)">8 pass</b><span style="color:var(--dim)"> / 0 fail / 0 skip</span></div>
-  <div style="color:var(--dim);font-size:14px">captured 2026-10-20T13:26:32Z, n8n listening on :5678<br>
+  <div style="color:var(--dim);font-size:14px">captured 2026-10-20T13:41Z, n8n on :5678, mock receiver on :8799<br>
   full transcript: <a href="transcripts/live-suite-2026-10-20.txt">transcripts/live-suite-2026-10-20.txt</a></div>
 </div>
 
@@ -63,6 +63,7 @@ Built for Shopify tracking, email deliverability and Klaviyo flow health.</p>
 <ul>
 <li>3 deliveries → <strong>4</strong> outbound events (Meta CAPI + GA4), the retry emits <strong>0</strong>.</li>
 <li>Runs end to end against a local n8n workflow and a mock receiver — <code>test_dedup.py</code>, 5 assertions.</li>
+<li>The suite starts its own mock receiver on <code>:8799</code> and kills it on exit — a leftover receiver from an earlier session is what makes this kind of test lie.</li>
 <li>Files: <a href="shopify-tracking/">shopify-tracking/</a></li>
 </ul>
 </div>

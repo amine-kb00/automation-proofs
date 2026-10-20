@@ -1,4 +1,5 @@
-captured 2026-10-20T13:26:32Z on the author's machine, n8n on :5678
+captured 2026-10-20T13:41Z on the author's machine, n8n on :5678
+the suite starts and stops its own mock receiver on :8799
 
 =====================================================================
 dmarc: aggregate reports         PASS 98 spoofed msgs -> p=none blocks nothing
