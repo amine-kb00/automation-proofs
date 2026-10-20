@@ -58,7 +58,8 @@ Built for Shopify tracking, email deliverability and Klaviyo flow health.</p>
 
 <h2>The suite</h2>
 <table>
-<tr><th>case</th><th>verdict</th><th>what it proves</th></tr>
+<thead><tr><th>case</th><th>verdict</th><th>what it proves</th></tr></thead>
+<tbody>
 <tr><td class="case">dmarc: aggregate reports</td><td class="v pass">PASS</td><td>98 spoofed messages from one IP, disposition <code>p=none</code> means the mailbox provider blocks nothing. The report is parsed (raw + gzip, namespace-tolerant) and the verdict is SPOOF, not <em>clean</em>.</td></tr>
 <tr><td class="case">klaviyo: flows (healthy)</td><td class="v pass">PASS</td><td>5/5 flows scored OK on a healthy export — the control case. A checker that fails everything is as useless as one that passes everything.</td></tr>
 <tr><td class="case">klaviyo: flows (broken)</td><td class="v pass">PASS</td><td>checkout flow stuck in draft, 48 h delay before the first email, 3 flows missing → FAIL.</td></tr>
@@ -67,6 +68,7 @@ Built for Shopify tracking, email deliverability and Klaviyo flow health.</p>
 <tr><td class="case">dns: gate closes (example.com)</td><td class="v pass">PASS</td><td>revoked DKIM key → FAIL → exit 1. The gate is proven to close on a real broken domain, not only on a fixture.</td></tr>
 <tr><td class="case">n8n: shopify dedup</td><td class="v pass">PASS</td><td>3 deliveries of the same order → 4 outbound events (2 CAPI + 2 GA4), the retry emits <strong>0</strong>.</td></tr>
 <tr><td class="case">n8n: deliverability webhook</td><td class="v pass">PASS</td><td>8/8 assertions against the live n8n webhook.</td></tr>
+</tbody>
 </table>
 
 <h2>The four checks</h2>
