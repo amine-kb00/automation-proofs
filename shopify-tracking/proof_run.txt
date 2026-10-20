@@ -1,0 +1,19 @@
+run_id=1792497774
+
+1st delivery  (order A)                HTTP 200  {"ok":true,"received":"/ga4"}
+2nd delivery  (retry, order A)         HTTP 200  {"skipped":true,"reason":"duplicate_event_id","event_id":"bde772f554098afbefa37c4d6cd7b70c
+3rd delivery  (order B)                HTTP 200  {"ok":true,"received":"/ga4"}
+
+Outbound events emitted: 4
+  POST /meta  -> bde772f554098afbefa37c4d6cd7b70c438b0b17ae8faf316d56cdaea5087abb
+  POST /ga4   -> 1792497774
+  POST /meta  -> 397db4893665561144fd0a4809f3695c0bc7ef8f1065e448b7458307a0dddef7
+  POST /ga4   -> 1792497775
+
+  [PASS] retry acknowledged as duplicate
+  [PASS] retry emitted nothing
+  [PASS] exactly 2 Meta events
+  [PASS] exactly 2 GA4 events
+  [PASS] all payloads are valid JSON
+
+PROOF HOLDS

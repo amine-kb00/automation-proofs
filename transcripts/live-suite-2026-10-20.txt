@@ -1,0 +1,13 @@
+captured 2026-10-20T13:26:32Z on the author's machine, n8n on :5678
+
+=====================================================================
+dmarc: aggregate reports         PASS 98 spoofed msgs -> p=none blocks nothing
+klaviyo: flows (healthy)         PASS 5/5 ok
+klaviyo: flows (broken)          PASS checkout in draft, 48h delay, 3 flows missing
+klaviyo: flows (thin export)     PASS UNSCORED must not pass
+dns: shopify.com                 PASS SPF 4 lookups, DMARC p=reject -> WARN, allowed
+dns: gate closes (example)       PASS revoked DKIM key -> FAIL -> exit 1
+n8n: shopify dedup               PASS 3 deliveries -> 4 events, retry emits 0
+n8n: deliverability webhook      PASS 8/8 assertions
+=====================================================================
+pass=8 fail=0 skip=0

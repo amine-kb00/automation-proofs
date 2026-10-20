@@ -1,0 +1,11 @@
+example.com  →  FAIL
+
+  MX     PASS
+  SPF    PASS
+         0/10 DNS lookups, all=-all
+  DKIM   FAIL
+         selectors: default(~0b), google(~0b), k1(~0b), k2(~0b), s1(~0b), s2(~0b), mail(~0b), smtp(~0b), klaviyo(~0b), kl(~0b), selector1(~0b), selector2(~0b), mandrill(~0b), sendgrid(~0b), shopify(~0b), cm(~0b), protonmail(~0b), mailchimp(~0b)
+         - 18 selector(s) resolve to an empty p= — the key is revoked, so this domain cannot sign at all
+  DMARC  WARN
+         p=reject
+         - no rua= — nobody receives the aggregate reports, so the policy can never be tightened safely

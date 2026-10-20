@@ -1,0 +1,12 @@
+  [PASS] shopify.com    http 200
+  [PASS] shopify.com    ok=True
+  [PASS] shopify.com    verdict=WARN
+  [PASS] shopify.com    full report attached
+         blocked on: - | warnings: ['SPF']
+  [PASS] example.com    http 200
+  [PASS] example.com    ok=False
+  [PASS] example.com    verdict=FAIL
+  [PASS] example.com    full report attached
+         blocked on: ['DKIM'] | warnings: ['DMARC']
+
+GATE PROVEN

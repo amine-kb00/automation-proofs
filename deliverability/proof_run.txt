@@ -1,0 +1,30 @@
+github.com  →  WARN
+
+  MX     PASS
+  SPF    WARN
+         10/10 DNS lookups, all=~all
+         - 10 DNS lookups — dangerously close to the 10 ceiling
+         - '~all' soft-fails; only '-all' refuses unauthorised senders
+  DKIM   PASS
+         selectors: google(~2352b), k1(~1296b), k2(~2352b), s1(~2352b), s2(~2352b), selector1(~1296b), cm(~1296b)
+  DMARC  PASS
+         p=quarantine
+shopify.com  →  WARN
+
+  MX     PASS
+  SPF    WARN
+         4/10 DNS lookups, all=~all
+         - '~all' soft-fails; only '-all' refuses unauthorised senders
+  DKIM   PASS
+         selectors: google(~1296b), mail(~1296b), kl(~2352b)
+  DMARC  PASS
+         p=reject
+microsoft.com  →  PASS
+
+  MX     PASS
+  SPF    PASS
+         7/10 DNS lookups, all=-all
+  DKIM   PASS
+         selectors: selector2(~1296b)
+  DMARC  PASS
+         p=reject

@@ -1,0 +1,12 @@
+{
+  "store": "thin-export.com",
+  "data": [
+    {
+      "id": "H1",
+      "attributes": {
+        "name": "Abandoned Checkout",
+        "status": "live"
+      }
+    }
+  ]
+}

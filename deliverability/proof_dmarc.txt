@@ -1,0 +1,9 @@
+mystore.com   policy p=none pct=100   reporters: google.com, microsoft.com
+  !! 98 message(s) failed both SPF and DKIM while p=none — forged mail is being delivered
+
+  source ip         msgs   pass  unalign  spoof  class
+  198.51.100.24      507   100%       0%     0%  PASS
+  45.155.205.233      98     0%       0%   100%  SPOOF
+      From: mystore.com   dispositions: none
+  203.0.113.7         18     0%     100%     0%  UNALIGN
+  192.0.2.55           7   100%       0%     0%  PASS

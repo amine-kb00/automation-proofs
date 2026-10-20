@@ -1,0 +1,190 @@
+{
+  "name": "Shopify Purchase -> Meta CAPI + GA4 (idempotent)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shopify-order",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "shopify-order-webhook",
+      "name": "Shopify order webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "shopify-order"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Shopify order -> idempotent server-side conversion (Meta CAPI + GA4)\n// ---------------------------------------------------------------\n// Problem it fixes: Shopify retries webhooks, and the browser pixel already\n// fires Purchase. Without a shared event_id you get double-counted purchases\n// in Meta and in GA4. This node derives a STABLE event_id from the order and\n// drops any delivery it has already emitted.\n\n// --- SHA-256 (Code node blocks require('crypto')) -----------------\nfunction sha256(ascii) {\n  function rightRotate(value, amount) { return (value >>> amount) | (value << (32 - amount)); }\n  const mathPow = Math.pow, maxWord = mathPow(2, 32);\n  let result = '';\n  const words = [], asciiBitLength = ascii.length * 8;\n  let hash = sha256.h = sha256.h || [];\n  const k = sha256.k = sha256.k || [];\n  let primeCounter = k.length;\n  const isComposite = {};\n  for (let candidate = 2; primeCounter < 64; candidate++) {\n    if (!isComposite[candidate]) {\n      for (let i = 0; i < 313; i += candidate) isComposite[i] = candidate;\n      hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;\n      k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;\n    }\n  }\n  ascii += '\\x80';\n  while (ascii.length % 64 - 56) ascii += '\\x00';\n  for (let i = 0; i < ascii.length; i++) {\n    const j = ascii.charCodeAt(i);\n    if (j >> 8) return '';\n    words[i >> 2] |= j << (((3 - i) % 4) * 8);\n  }\n  words[words.length] = (asciiBitLength / maxWord) | 0;\n  words[words.length] = asciiBitLength;\n  for (let j = 0; j < words.length;) {\n    const w = words.slice(j, (j += 16));\n    const oldHash = hash.slice(0);\n    for (let i = 0; i < 64; i++) {\n      const w15 = w[i - 15], w2 = w[i - 2];\n      const a = hash[0], e = hash[4];\n      const temp1 = hash[7]\n        + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))\n        + ((e & hash[5]) ^ ((~e) & hash[6]))\n        + k[i]\n        + (w[i] = (i < 16) ? w[i] : (\n            w[i - 16]\n            + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))\n            + w[i - 7]\n            + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))\n          ) | 0);\n      const temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))\n        + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));\n      hash = [(temp1 + temp2) | 0].concat(hash);\n      hash[4] = (hash[4] + temp1) | 0;\n    }\n    for (let i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;\n  }\n  for (let i = 0; i < 8; i++) {\n    for (let j = 3; j + 1; j--) {\n      const b = (hash[i] >> (j * 8)) & 255;\n      result += (b < 16 ? '0' : '') + b.toString(16);\n    }\n  }\n  return result;\n}\n\nconst body = $json.body || $json;\nconst order = body.id ? body : (body.order || {});\nconst orderId = String(order.id || order.order_number || '');\nif (!orderId) { return []; }\n\nconst h = (s) => sha256(String(s).trim().toLowerCase());\n\n// Stable event_id: identical for the browser pixel and every webhook retry.\nconst eventId = h('purchase:' + orderId + ':' + (order.currency || 'USD') + ':' + (order.total_price || '0'));\n\nconst staticData = $getWorkflowStaticData('global');\nstaticData.seen = staticData.seen || {};\nconst nowMs = Date.now();\nfor (const key of Object.keys(staticData.seen)) {\n  if (nowMs - staticData.seen[key] > 30 * 24 * 3600 * 1000) delete staticData.seen[key];\n}\nif (staticData.seen[eventId]) {\n  return [{ json: { skipped: true, reason: 'duplicate_event_id', event_id: eventId, order_id: orderId } }];\n}\nstaticData.seen[eventId] = nowMs;\n\nconst value = Number(order.total_price || 0);\nconst currency = order.currency || 'USD';\nconst email = order.email || order.contact_email || '';\nconst items = (order.line_items || []).map(function (li) {\n  return {\n    id: String(li.sku || li.variant_id || ''),\n    quantity: Number(li.quantity || 1),\n    item_price: Number(li.price || 0),\n  };\n});\n\nconst meta = {\n  data: [{\n    event_name: 'Purchase',\n    event_time: Math.floor(nowMs / 1000),\n    event_id: eventId,\n    action_source: 'website',\n    event_source_url: 'https://' + (order.shop_domain || 'shop.example.com') + '/checkout',\n    user_data: {\n      em: email ? [h(email)] : [],\n      external_id: [h(String((order.customer && order.customer.id) || orderId))],\n    },\n    custom_data: {\n      currency: currency,\n      value: value,\n      order_id: orderId,\n      contents: items,\n      num_items: items.length,\n    },\n  }],\n};\n\nconst ga4 = {\n  client_id: String((order.customer && order.customer.id) || orderId),\n  events: [{\n    name: 'purchase',\n    params: { transaction_id: orderId, currency: currency, value: value, items: items },\n  }],\n};\n\nreturn [{\n  json: {\n    event_id: eventId,\n    order_id: orderId,\n    skipped: false,\n    meta: meta,\n    ga4: ga4,\n    metaJson: JSON.stringify(meta),\n    ga4Json: JSON.stringify(ga4),\n  },\n}];\n"
+      },
+      "id": "idempotency-+-payload",
+      "name": "Idempotency + payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.skipped }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "drop-duplicate",
+      "name": "Drop duplicate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8799/meta",
+        "sendBody": true,
+        "contentType": "raw",
+        "body": "={{ $json.metaJson }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "meta-capi",
+      "name": "Meta CAPI",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        -110
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8799/ga4",
+        "sendBody": true,
+        "contentType": "raw",
+        "body": "={{ $json.ga4Json }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "ga4-purchase",
+      "name": "GA4 purchase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        110
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "ignored-duplicate",
+      "name": "Ignored duplicate",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        680,
+        260
+      ]
+    }
+  ],
+  "connections": {
+    "Shopify order webhook": {
+      "main": [
+        [
+          {
+            "node": "Idempotency + payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Idempotency + payload": {
+      "main": [
+        [
+          {
+            "node": "Drop duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Drop duplicate": {
+      "main": [
+        [
+          {
+            "node": "Meta CAPI",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GA4 purchase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignored duplicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "shopifyPurchaseDedup1",
+  "active": false
+}

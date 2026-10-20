@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Proofs that run — automation checks with a failing case</title>
+<style>
+:root{--bg:#0e1116;--fg:#d7dde5;--dim:#8b97a6;--line:#222a35;--ok:#3fb950;--no:#f85149;--warn:#d29922;--acc:#58a6ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.wrap{max-width:860px;margin:0 auto;padding:48px 20px 96px}
+h1{font-size:30px;line-height:1.2;margin:0 0 8px;letter-spacing:-.02em}
+.sub{color:var(--dim);margin:0 0 36px}
+h2{font-size:19px;margin:44px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+h3{font-size:16px;margin:26px 0 6px}
+p{margin:10px 0}
+code{background:#161b22;border:1px solid var(--line);border-radius:4px;padding:1px 5px;font-size:14px}
+pre{background:#0b0f14;border:1px solid var(--line);border-radius:8px;padding:14px;overflow-x:auto;font-size:13px;line-height:1.45}
+.verdict{display:flex;gap:22px;flex-wrap:wrap;align-items:baseline;background:#11161d;border:1px solid var(--line);border-left:3px solid var(--ok);border-radius:8px;padding:16px 18px;margin:22px 0}
+.verdict b{font-size:22px}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+td,th{border-bottom:1px solid var(--line);padding:10px 8px;vertical-align:top;text-align:left}
+th{color:var(--dim);font-weight:400;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.case{white-space:nowrap;color:var(--fg)}
+.v{font-weight:700}
+.v.pass{color:var(--ok)} .v.fail{color:var(--no)}
+.card{border:1px solid var(--line);border-radius:8px;padding:18px 18px 12px;margin:16px 0;background:#11161d}
+.card h3{margin-top:0}
+.tag{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.06em}
+.note{border-left:3px solid var(--warn);padding-left:14px;color:var(--dim);font-size:14px}
+a{color:var(--acc);text-decoration:none} a:hover{text-decoration:underline}
+ul{margin:8px 0 8px 18px;padding:0} li{margin:4px 0}
+</style></head><body><div class="wrap">
+
+<h1>Proofs that run</h1>
+<p class="sub">Four automation checks. Each ships with a case designed to fail, and the suite asserts that it does.
+Built for Shopify tracking, email deliverability and Klaviyo flow health.</p>
+
+<div class="verdict">
+  <div><b style="color:var(--ok)">8 pass</b><span style="color:var(--dim)"> / 0 fail / 0 skip</span></div>
+  <div style="color:var(--dim);font-size:14px">captured 2026-10-20T13:26:32Z, n8n listening on :5678<br>
+  full transcript: <a href="transcripts/live-suite-2026-10-20.txt">transcripts/live-suite-2026-10-20.txt</a></div>
+</div>
+
+<h2>The suite</h2>
+<table>
+<tr><th>case</th><th>verdict</th><th>what it proves</th></tr>
+<tr><td class="case">dmarc: aggregate reports</td><td class="v pass">PASS</td><td>98 spoofed messages from one IP, disposition <code>p=none</code> means the mailbox provider blocks nothing. The report is parsed (raw + gzip, namespace-tolerant) and the verdict is SPOOF, not <em>clean</em>.</td></tr>
+<tr><td class="case">klaviyo: flows (healthy)</td><td class="v pass">PASS</td><td>5/5 flows scored OK on a healthy export — the control case. A checker that fails everything is as useless as one that passes everything.</td></tr>
+<tr><td class="case">klaviyo: flows (broken)</td><td class="v pass">PASS</td><td>checkout flow stuck in draft, 48 h delay before the first email, 3 flows missing → FAIL.</td></tr>
+<tr><td class="case">klaviyo: flows (thin export)</td><td class="v pass">PASS</td><td>the API returned flows without their step tree, so the audit <strong>cannot</strong> judge them. Verdict <code>UNSCORED</code>, and a critical UNSCORED fails the store. This is the line that stops the audit from certifying what it never looked at.</td></tr>
+<tr><td class="case">dns: shopify.com</td><td class="v pass">PASS</td><td>real <code>dig</code>, real domain: 4 SPF lookups, DMARC <code>p=reject</code> → WARN, allowed. WARN passes, FAIL blocks.</td></tr>
+<tr><td class="case">dns: gate closes (example.com)</td><td class="v pass">PASS</td><td>revoked DKIM key → FAIL → exit 1. The gate is proven to close on a real broken domain, not only on a fixture.</td></tr>
+<tr><td class="case">n8n: shopify dedup</td><td class="v pass">PASS</td><td>3 deliveries of the same order → 4 outbound events (2 CAPI + 2 GA4), the retry emits <strong>0</strong>.</td></tr>
+<tr><td class="case">n8n: deliverability webhook</td><td class="v pass">PASS</td><td>8/8 assertions against the live n8n webhook.</td></tr>
+</table>
+
+<h2>The four checks</h2>
+
+<div class="card">
+<div class="tag">01 — Shopify → Meta CAPI / GA4</div>
+<h3>Idempotent purchase events</h3>
+<p>The duplicate is the failure mode. An order is delivered three times by the webhook; the bridge derives
+<code>event_id = sha256(order_id + currency + total)</code> and keeps a 30-day window of ids it has already sent.</p>
+<ul>
+<li>3 deliveries → <strong>4</strong> outbound events (Meta CAPI + GA4), the retry emits <strong>0</strong>.</li>
+<li>Runs end to end against a local n8n workflow and a mock receiver — <code>test_dedup.py</code>, 5 assertions.</li>
+<li>Files: <a href="shopify-tracking/">shopify-tracking/</a></li>
+</ul>
+</div>
+
+<div class="card">
+<div class="tag">02 — Deliverability</div>
+<h3>SPF / DKIM / DMARC gate with an exit code</h3>
+<p><code>0</code> = send is safe, <code>1</code> = critical defect. A scheduler can open a ticket on the exit code alone.</p>
+<ul>
+<li>Honours the RFC 7208 ten-lookup ceiling instead of pretending it does not exist.</li>
+<li>Measured on real domains: <code>github.com</code> 10/10 lookups, <code>shopify.com</code> <code>p=reject</code> → WARN, <code>example.com</code> revoked DKIM → FAIL, exit 1.</li>
+<li>Files: <a href="deliverability/">deliverability/</a></li>
+</ul>
+</div>
+
+<div class="card">
+<div class="tag">03 — DMARC reporting</div>
+<h3>What the aggregate reports actually say</h3>
+<p>Parses <code>rua</code> reports, raw or gzipped, namespace-tolerant. It does not stop at “DMARC is configured”: it reports
+which IPs sent as your domain, how many messages failed alignment, and what the policy did about it.</p>
+<ul>
+<li>Fixture: 98 spoofed messages from a single IP, disposition <code>none</code> — the record exists and blocks nothing.</li>
+<li>Files: <a href="deliverability/dmarc_report.py">deliverability/dmarc_report.py</a></li>
+</ul>
+</div>
+
+<div class="card">
+<div class="tag">04 — Klaviyo</div>
+<h3>Flow audit with a third verdict</h3>
+<p>Audits five flows: abandoned checkout, browse abandonment, welcome, post-purchase, win-back. Two lessons came from running it,
+not from a checklist:</p>
+<ul>
+<li>Klaviyo names the flow <strong>“Abandoned Cart”</strong>. A naive matcher on “abandoned checkout” reports it missing when it is live.</li>
+<li>When the export carries no step detail the flow is <code>UNSCORED</code>, never OK — and a critical <code>UNSCORED</code> fails the store.</li>
+<li>Files: <a href="klaviyo-audit/">klaviyo-audit/</a></li>
+</ul>
+</div>
+
+<h1 style="font-size:22px;margin-top:52px">What this is not</h1>
+<p class="note">No proof here ran against a live client store. The DMARC fixtures are synthetic (documentation IP ranges),
+the Klaviyo exports are shaped like the real API but hand-built, and the Shopify workflow was exercised against a mock
+receiver, not against Shopify's production endpoint. What is real: the logic, the failure cases, the exit codes, and the
+outputs above. Where a client deployment needs a token, an approved app or a mailbox that receives <code>rua=</code> mail,
+this says so in the README of each folder instead of hiding it.</p>
+
+<h2>Reproduce</h2>
+<pre>git clone https://github.com/amine-kb00/automation-proofs.git
+cd automation-proofs
+bash run_all.sh          # 6 checks need nothing but python3 + dig
+                         # the 2 n8n checks need a local n8n on :5678 (command in the README)
+bash run_all.sh --strict # turns a SKIP into a failure — nothing hides</pre>
+
+<p style="color:var(--dim);font-size:13px;margin-top:40px">
+Source is in each folder. MIT licensed. No client data, no credentials, no absolute paths.</p>
+
+</div></body></html>

@@ -1,0 +1,52 @@
+broken-store.com — 3 flows
+
+  Abandoned checkout   BROKEN   (CRITICAL)
+      'Abandoned Cart'  status=draft  score=10
+        - status is 'draft', not live — the flow is built but not running
+        - first email after 48h, too late for this flow (target ≤ 24h)
+        - no SMS step; on mobile checkouts SMS is the step that converts
+  Browse abandonment   MISSING  (HIGH)
+        - no flow matches this trigger. catches the visitor who never reached checkout; worthless if it fires days later
+  Welcome series       WEAK     (HIGH)
+      'Newsletter Welcome'  status=live  score=70
+        - 1 email(s), expected at least 2
+        - first email fires immediately — no delay means no recovery window
+  Post-purchase        MISSING  (HIGH)
+        - no flow matches this trigger. kills 'where is my order' tickets and is the only legitimate place to ask for a review
+  Win-back             MISSING  (MEDIUM)
+        - no flow matches this trigger. a repeat-purchase store without win-back pays acquisition cost twice
+
+  also present: Black Friday blast
+
+VERDICT: FAIL — Abandoned checkout
+
+healthy-store.com — 5 flows
+
+  Abandoned checkout   OK       (CRITICAL)
+      'Abandoned checkout — 3 steps'  status=live  score=100
+  Browse abandonment   OK       (HIGH)
+      'Browse abandonment'  status=live  score=100
+  Welcome series       OK       (HIGH)
+      'Welcome series'  status=live  score=100
+  Post-purchase        OK       (HIGH)
+      'Post-purchase + review request'  status=live  score=100
+  Win-back             OK       (MEDIUM)
+      'Win-back 120 days'  status=live  score=100
+
+VERDICT: PASS
+
+thin-export.com — 1 flows
+
+  Abandoned checkout   UNSCORED (CRITICAL)
+      'Abandoned Checkout'  status=live  score=n/a
+        - step-level detail absent from this export: email count and first delay cannot be scored
+  Browse abandonment   MISSING  (HIGH)
+        - no flow matches this trigger. catches the visitor who never reached checkout; worthless if it fires days later
+  Welcome series       MISSING  (HIGH)
+        - no flow matches this trigger. the only flow that runs while intent is at its peak — the signup itself
+  Post-purchase        MISSING  (HIGH)
+        - no flow matches this trigger. kills 'where is my order' tickets and is the only legitimate place to ask for a review
+  Win-back             MISSING  (MEDIUM)
+        - no flow matches this trigger. a repeat-purchase store without win-back pays acquisition cost twice
+
+VERDICT: FAIL — Abandoned checkout

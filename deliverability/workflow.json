@@ -1,0 +1,128 @@
+{
+  "id": "deliverabilityGate1",
+  "name": "Deliverability gate — SPF/DKIM/DMARC on demand",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "path": "audit-domain",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1",
+      "name": "Domain webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "deliverabilityGate1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Validate before the value ever reaches a shell.\nconst raw = ($json.body && $json.body.domain) || $json.domain || '';\nconst domain = String(raw).trim().toLowerCase();\nif (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) {\n  throw new Error('invalid domain: ' + raw);\n}\nconst selectors = ($json.body && $json.body.selectors) || '';\nif (selectors && !/^[a-z0-9,._-]+$/.test(selectors)) {\n  throw new Error('invalid selectors');\n}\nreturn [{ json: { domain, selectors } }];"
+      },
+      "id": "a2",
+      "name": "Validate domain",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=python3 ./deliverability/check_domain.py --json {{ $json.domain }}{{ $json.selectors ? ' --selectors ' + $json.selectors : '' }} 2>&1; true",
+        "executeOnce": true
+      },
+      "id": "a3",
+      "name": "Run audit",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const out = $json.stdout || '';\nlet reports;\ntry { reports = JSON.parse(out); }\ncatch (e) { throw new Error('audit produced no JSON: ' + out.slice(0, 300)); }\nconst summary = reports.map(r => ({\n  domain: r.domain, verdict: r.verdict,\n  failures: ['mx','spf','dkim','dmarc']\n    .filter(k => r[k].verdict === 'FAIL')\n    .map(k => k.toUpperCase()),\n  warnings: ['mx','spf','dkim','dmarc']\n    .filter(k => r[k].verdict === 'WARN')\n    .map(k => k.toUpperCase()),\n}));\nreturn [{ json: {\n  ok: summary.every(s => s.verdict !== 'FAIL'),\n  summary,\n  reports,\n} }];"
+      },
+      "id": "a4",
+      "name": "Shape verdict",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "a5",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Domain webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate domain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate domain": {
+      "main": [
+        [
+          {
+            "node": "Run audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run audit": {
+      "main": [
+        [
+          {
+            "node": "Shape verdict",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape verdict": {
+      "main": [
+        [
+          {
+            "node": "Respond",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

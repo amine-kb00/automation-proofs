@@ -1,0 +1,102 @@
+{
+  "store": "healthy-store.com",
+  "data": [
+    {
+      "id": "G1",
+      "attributes": {
+        "name": "Abandoned checkout — 3 steps",
+        "status": "live"
+      },
+      "steps": [
+        {
+          "type": "email",
+          "delay_hours": 1
+        },
+        {
+          "type": "sms",
+          "delay_hours": 4
+        },
+        {
+          "type": "email",
+          "delay_hours": 24
+        },
+        {
+          "type": "email",
+          "delay_hours": 72
+        }
+      ]
+    },
+    {
+      "id": "G2",
+      "attributes": {
+        "name": "Browse abandonment",
+        "status": "live"
+      },
+      "steps": [
+        {
+          "type": "email",
+          "delay_hours": 2
+        },
+        {
+          "type": "email",
+          "delay_hours": 24
+        }
+      ]
+    },
+    {
+      "id": "G3",
+      "attributes": {
+        "name": "Welcome series",
+        "status": "live"
+      },
+      "steps": [
+        {
+          "type": "email",
+          "delay_hours": 0.5
+        },
+        {
+          "type": "email",
+          "delay_hours": 24
+        },
+        {
+          "type": "email",
+          "delay_hours": 72
+        }
+      ]
+    },
+    {
+      "id": "G4",
+      "attributes": {
+        "name": "Post-purchase + review request",
+        "status": "live"
+      },
+      "steps": [
+        {
+          "type": "email",
+          "delay_hours": 168
+        },
+        {
+          "type": "email",
+          "delay_hours": 336
+        }
+      ]
+    },
+    {
+      "id": "G5",
+      "attributes": {
+        "name": "Win-back 120 days",
+        "status": "live"
+      },
+      "steps": [
+        {
+          "type": "email",
+          "delay_hours": 2880
+        },
+        {
+          "type": "email",
+          "delay_hours": 4320
+        }
+      ]
+    }
+  ]
+}

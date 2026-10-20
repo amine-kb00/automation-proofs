@@ -1,0 +1,113 @@
+[
+  {
+    "domain": "amazon.com",
+    "mx": {
+      "domain": "amazon.com",
+      "verdict": "PASS",
+      "hosts": [
+        "5 amazon-smtp.amazon.com."
+      ]
+    },
+    "spf": {
+      "domain": "amazon.com",
+      "found": [
+        "v=spf1 include:spf1.amazon.com include:spf2.amazon.com include:amazonses.com -all"
+      ],
+      "verdict": "PASS",
+      "notes": [],
+      "lookups": 4,
+      "broken_includes": [],
+      "all": "-all",
+      "record": "v=spf1 include:spf1.amazon.com include:spf2.amazon.com include:amazonses.com -all"
+    },
+    "dkim": {
+      "domain": "amazon.com",
+      "verdict": "WARN",
+      "found": [],
+      "notes": [
+        "no key on the common selectors \u2014 this is not proof of failure: Klaviyo and Shopify often publish a custom selector. Ask the client for it, then re-run with --selectors"
+      ]
+    },
+    "dmarc": {
+      "domain": "amazon.com",
+      "verdict": "PASS",
+      "notes": [],
+      "record": "v=DMARC1;p=quarantine;pct=100;rua=mailto:report@dmarc.amazon.com;ruf=mailto:report@dmarc.amazon.com",
+      "tags": {
+        "v": "DMARC1",
+        "p": "quarantine",
+        "pct": "100",
+        "rua": "mailto:report@dmarc.amazon.com",
+        "ruf": "mailto:report@dmarc.amazon.com"
+      },
+      "policy": "quarantine"
+    },
+    "verdict": "WARN"
+  },
+  {
+    "domain": "shopify.com",
+    "mx": {
+      "domain": "shopify.com",
+      "verdict": "PASS",
+      "hosts": [
+        "5 alt2.aspmx.l.google.com.",
+        "1 aspmx.l.google.com.",
+        "10 alt3.aspmx.l.google.com.",
+        "10 alt4.aspmx.l.google.com.",
+        "5 alt1.aspmx.l.google.com."
+      ]
+    },
+    "spf": {
+      "domain": "shopify.com",
+      "found": [
+        "v=spf1 include:_spf.google.com include:mail.zendesk.com include:sendgrid.net ~all"
+      ],
+      "verdict": "WARN",
+      "notes": [
+        "'~all' soft-fails; only '-all' refuses unauthorised senders"
+      ],
+      "lookups": 4,
+      "broken_includes": [],
+      "all": "~all",
+      "record": "v=spf1 include:_spf.google.com include:mail.zendesk.com include:sendgrid.net ~all"
+    },
+    "dkim": {
+      "domain": "shopify.com",
+      "verdict": "PASS",
+      "found": [
+        {
+          "selector": "google",
+          "bits": 1296,
+          "record": "v=DKIM1;k=rsa;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCYb9CEvB9Fl44NTJtFQAlzmnP5ZJ7T8kdJ4QV58E/GBkwDQPCvajrwxkcq414yDaGJ"
+        },
+        {
+          "selector": "mail",
+          "bits": 1296,
+          "record": "v=DKIM1;g=*;k=rsa;p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC6FVv1tmxOilnHUpvqpf4jlVcidUZL9A9NmMvzBifAtmn8QxlfvyrI8aQ+5T7e"
+        },
+        {
+          "selector": "kl",
+          "bits": 2352,
+          "record": "k=rsa;t=s;p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAztcABv4gl6fHyhpWbKb7Fo/F9GLERtmnYVmI8Pgbj3bJaUuURhf3pIcMqbhmAPvG"
+        }
+      ],
+      "notes": []
+    },
+    "dmarc": {
+      "domain": "shopify.com",
+      "verdict": "PASS",
+      "notes": [],
+      "record": "v=DMARC1; p=reject; pct=100; fo=1; rua=mailto:dmarc-aggregate@shopify.com;ruf=mailto:dmarc-reports@shopify.com",
+      "tags": {
+        "v": "DMARC1",
+        "p": "reject",
+        "pct": "100",
+        "fo": "1",
+        "rua": "mailto:dmarc-aggregate@shopify.com",
+        "ruf": "mailto:dmarc-reports@shopify.com"
+      },
+      "policy": "reject"
+    },
+    "verdict": "WARN"
+  }
+]

@@ -1,0 +1,51 @@
+{
+  "store": "broken-store.com",
+  "data": [
+    {
+      "id": "F1",
+      "attributes": {
+        "name": "Abandoned Cart",
+        "status": "draft",
+        "trigger_type": "metric"
+      },
+      "steps": [
+        {
+          "type": "email",
+          "delay_hours": 48
+        },
+        {
+          "type": "email",
+          "delay_hours": 96
+        }
+      ]
+    },
+    {
+      "id": "F2",
+      "attributes": {
+        "name": "Newsletter Welcome",
+        "status": "live",
+        "trigger_type": "list"
+      },
+      "steps": [
+        {
+          "type": "email",
+          "delay_hours": 0
+        }
+      ]
+    },
+    {
+      "id": "F3",
+      "attributes": {
+        "name": "Black Friday blast",
+        "status": "live",
+        "trigger_type": "segment"
+      },
+      "steps": [
+        {
+          "type": "email",
+          "delay_hours": 0
+        }
+      ]
+    }
+  ]
+}
